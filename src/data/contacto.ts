@@ -71,25 +71,6 @@ export const operationContextItems: IconItem[] = [
   { text: "Objetivos.", icon: Goal },
 ];
 
-export const industryOptions = [
-  "Departamentales / Autoservicio",
-  "Muebles y Decoración",
-  "Electrodomésticos y Línea Blanca",
-  "Hogar (Reparaciones, Instalaciones, Mudanzas)",
-  "Servicios de Tecnología (Internet, Telefonía)",
-  "e-Commerce",
-  "Operador Logístico",
-  "Otro",
-] as const;
-
-export const volumeOptions = [
-  "Menos de 100",
-  "100–500",
-  "501–2,000",
-  "2,001–10,000",
-  "Más de 10,000",
-] as const;
-
 export const formCopy = {
   helperEmail: "Utiliza tu correo corporativo.",
   helperPhone: "Si nos compartes tu número te contactaremos por WhatsApp. ",
@@ -116,19 +97,6 @@ export const formCopy = {
     "Hemos recibido tu solicitud. Un especialista de Shopitrack se pondrá en contacto contigo lo antes posible.",
   successCta: "Volver al Inicio",
 };
-
-export const blockedEmailDomains = [
-  "gmail.com",
-  "hotmail.com",
-  "outlook.com",
-  "yahoo.com",
-  "proton.me",
-  "protonmail.com",
-  "icloud.com",
-  "mail.com",
-  "mailfence.com",
-  "zoho.com",
-];
 
 export const faqItems: FaqItem[] = [
   {

@@ -7,7 +7,7 @@ Este repositorio contiene el sitio web corporativo de Shopitrack: una SPA (Singl
 ## Funcionalidades principales
 
 - Sitio corporativo con páginas para empresas, clientes finales, sectores atendidos y contacto.
-- Formulario de contacto con validación del lado del cliente y protección anti-spam (honeypot). El envío aún no está conectado a un servicio de backend.
+- Formulario de contacto con validación en navegador y servidor, Cloudflare Turnstile y honeypot. Cada solicitud se guarda en Airtable y se notifica por correo con Resend mediante la función serverless `api/leads.ts` (ver [docs/CONTACT-FORM.md](./docs/CONTACT-FORM.md)).
 - Páginas legales: aviso de privacidad, política de cookies y términos y condiciones.
 - SEO por página (title, description, canonical, Open Graph) desde `src/data/seo.ts`, más `sitemap.xml` y `robots.txt`.
 - Analytics centralizados en `src/analytics/` (LinkedIn Insight Tag, Google Tag Manager y Google Analytics 4); cada servicio se activa solo si su ID está configurado.
@@ -98,6 +98,7 @@ npm run build       # build de producción (dist/)
 npm run preview     # preview del build
 npm run typecheck   # verificación de tipos
 npm run lint        # eslint
+npm test            # pruebas del formulario de contacto (validación y endpoint simulado; Node >= 22.15)
 ```
 
 ## Variables de entorno
@@ -111,6 +112,8 @@ Definidas en `.env.example`. Son IDs públicos de analytics, no secretos; si una
 | `VITE_GA4_MEASUREMENT_ID` | Google Analytics 4 |
 
 En producción se configuran en Vercel → Settings → Environment Variables. Las variables `VITE_*` terminan en el bundle público: nunca guardes secretos en ellas. Detalle en [docs/ANALYTICS.md](./docs/ANALYTICS.md).
+
+El formulario de contacto usa además variables de Turnstile, Airtable y Resend (públicas y solo de servidor); ver [docs/CONTACT-FORM.md](./docs/CONTACT-FORM.md).
 
 ## Build y despliegue
 
