@@ -36,6 +36,8 @@ const lead = {
   submissionId,
 };
 
+const recipients = ["contacto@shopitrack.com", "respaldo@example.com"];
+
 const personalData = [lead.firstName, lead.lastName, lead.email, lead.phone, "Hola"];
 
 function fakeServices(overrides: Partial<FakeOptions> = {}) {
@@ -50,6 +52,7 @@ function fakeServices(overrides: Partial<FakeOptions> = {}) {
   const records: FakeRecord[] = [];
   const createdFields: Record<string, unknown>[] = [];
   const emailsSent: { key: string; body: Record<string, string | string[]> }[] = [];
+  const resendRequests: Record<string, string | string[]>[] = [];
   const resendKeys = new Map<string, { payload: string; done: boolean }>();
   const calls: string[] = [];
   let clock = 0;
@@ -105,6 +108,7 @@ function fakeServices(overrides: Partial<FakeOptions> = {}) {
     }
 
     calls.push("resend");
+    resendRequests.push(body);
     const key = new Headers(init.headers).get("Idempotency-Key") ?? "";
     const payload = String(init.body);
     const known = resendKeys.get(key);
@@ -127,7 +131,7 @@ function fakeServices(overrides: Partial<FakeOptions> = {}) {
   }
 
   globalThis.fetch = fetchFake as typeof fetch;
-  return { options, records, createdFields, emailsSent, calls };
+  return { options, records, createdFields, emailsSent, resendRequests, calls };
 }
 
 function storedRecord(status: string): FakeRecord {
@@ -178,6 +182,7 @@ beforeEach(() => {
     AIRTABLE_TABLE_NAME: "tblTEST",
     RESEND_API_KEY: "test-resend-key",
     RESEND_FROM: "Shopitrack <notificaciones@example.com>",
+    CONTACT_EMAIL_BACKUP: "respaldo@example.com",
   });
   delete process.env.CONTACT_EMAIL;
 });
@@ -214,7 +219,7 @@ test("1. first submission creates one lead as Pendiente, notifies and marks Envi
   assert.equal(fake.emailsSent.length, 1);
   const email = fake.emailsSent[0];
   assert.equal(email.key, `lead-notification/${submissionId}`);
-  assert.deepEqual(email.body.to, ["contacto@shopitrack.com"]);
+  assert.deepEqual(email.body.to, recipients);
   assert.equal(email.body.reply_to, lead.email);
   assert.equal(email.body.subject, "Nuevo contacto desde Shopitrack");
   assert.ok(!String(email.body.html).includes("<script>"));
@@ -260,6 +265,7 @@ test("5. a Resend failure keeps the lead and marks it Error", async () => {
   assert.equal(fake.records.length, 1);
   assert.equal(fake.records[0].fields["Estado de notificación"], "Error");
   assert.equal(fake.emailsSent.length, 0);
+  assert.deepEqual(fake.resendRequests.map((request) => request.to), [recipients]);
   assert.ok(logs.some((line) => line.includes("notification failed for record rec1")));
 });
 
@@ -333,6 +339,23 @@ test("browser-supplied privileged values are ignored", async () => {
   await post({ ...lead, Estado: "Ganado", "Estado de notificación": "Enviada", CONTACT_EMAIL: "x@evil.test", to: "x@evil.test" });
   assert.equal(fake.createdFields[0].Estado, "Nuevo");
   assert.equal(fake.createdFields[0]["Estado de notificación"], "Pendiente");
+  assert.deepEqual(fake.emailsSent[0].body.to, recipients);
+});
+
+test("both recipients get one request; backup is optional and deduplicated", async () => {
+  let fake = fakeServices();
+  await post(lead);
+  assert.equal(fake.resendRequests.length, 1);
+  assert.deepEqual(fake.emailsSent[0].body.to, recipients);
+
+  delete process.env.CONTACT_EMAIL_BACKUP;
+  fake = fakeServices();
+  await post(lead);
+  assert.deepEqual(fake.emailsSent[0].body.to, ["contacto@shopitrack.com"]);
+
+  process.env.CONTACT_EMAIL_BACKUP = " Contacto@Shopitrack.com ";
+  fake = fakeServices();
+  await post(lead);
   assert.deepEqual(fake.emailsSent[0].body.to, ["contacto@shopitrack.com"]);
 });
 

@@ -13,6 +13,7 @@ const requiredEnv = [
 
 type Env = Record<(typeof requiredEnv)[number], string> & {
   CONTACT_EMAIL: string;
+  CONTACT_EMAIL_BACKUP: string;
 };
 
 interface AirtableRecord {
@@ -248,6 +249,14 @@ async function sendNotification(
   submissionId: string,
 ): Promise<"accepted" | "duplicate"> {
   const email = notificationEmail(record);
+  // One request for both inboxes: same message, same idempotency key.
+  const to = [
+    ...new Set(
+      [env.CONTACT_EMAIL, env.CONTACT_EMAIL_BACKUP]
+        .filter(Boolean)
+        .map((address) => address.toLowerCase()),
+    ),
+  ];
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -257,7 +266,7 @@ async function sendNotification(
     },
     body: JSON.stringify({
       from: env.RESEND_FROM,
-      to: [env.CONTACT_EMAIL],
+      to,
       reply_to: email.replyTo || undefined,
       subject,
       text: email.text,
@@ -321,6 +330,7 @@ export default {
       ),
       CONTACT_EMAIL:
         process.env.CONTACT_EMAIL?.trim() || "contacto@shopitrack.com",
+      CONTACT_EMAIL_BACKUP: process.env.CONTACT_EMAIL_BACKUP?.trim() ?? "",
     } as Env;
 
     const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();

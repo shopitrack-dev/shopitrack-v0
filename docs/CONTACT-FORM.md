@@ -22,6 +22,7 @@ Flujo: `src/pages/Contacto.tsx` → Cloudflare Turnstile → `POST /api/leads` (
 | `RESEND_API_KEY` | Secreta | API key de Resend |
 | `RESEND_FROM` | Servidor | Remitente en un dominio verificado, p. ej. `Shopitrack <notificaciones@shopitrack.com>` |
 | `CONTACT_EMAIL` | Servidor | Destinatario. Si falta: `contacto@shopitrack.com` |
+| `CONTACT_EMAIL_BACKUP` | Servidor (opcional) | Correo de respaldo. Recibe el mismo aviso en la misma solicitud a Resend (`to` con ambas direcciones). Si falta, solo se notifica a `CONTACT_EMAIL` |
 
 - **Vercel** (Settings → Environment Variables): todas, en Production y en Preview. `VITE_TURNSTILE_SITE_KEY` se lee al hacer el build: después de cambiarla hay que volver a desplegar.
 - **Local**: `.env` (está en `.gitignore`), con la plantilla de `.env.example`. Solo hace falta si usas `vercel dev`.
@@ -74,7 +75,7 @@ El endpoint envía `typecast: true`, por lo que Airtable puede intentar crear un
 2. `RESEND_FROM` debe usar ese dominio.
 3. Resend → API Keys: crear una key con permiso Sending access, limitada al dominio, y guardarla en `RESEND_API_KEY`.
 
-El aviso llega con asunto "Nuevo contacto desde Shopitrack" y `reply_to` con el email del prospecto. Se envía con el encabezado `Idempotency-Key: lead-notification/<ID de envío>` y su contenido se arma solo con los datos guardados en Airtable, así que un reintento repite exactamente la misma solicitud y Resend no vuelve a enviarla durante 24 horas. Que Resend acepte la solicitud no garantiza la entrega; el estado de cada envío se ve en Resend → Emails.
+El aviso llega a `CONTACT_EMAIL` y, si está configurado, a `CONTACT_EMAIL_BACKUP`, en una sola solicitud. Ambas direcciones aparecen en el campo "Para" del correo, así que cada destinatario ve la otra; el sitio no las muestra. Llega con asunto "Nuevo contacto desde Shopitrack" y `reply_to` con el email del prospecto. Se envía con el encabezado `Idempotency-Key: lead-notification/<ID de envío>` y su contenido se arma solo con los datos guardados en Airtable, así que un reintento repite exactamente la misma solicitud y Resend no vuelve a enviarla durante 24 horas. Que Resend acepte la solicitud no garantiza la entrega; el estado de cada envío se ve en Resend → Emails.
 
 ## Reintentos e idempotencia
 
