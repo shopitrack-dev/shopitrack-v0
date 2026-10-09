@@ -18,32 +18,27 @@ import { InfoCard } from "@/components/InfoCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { Seo } from "@/components/Seo";
 import {
-  blockedEmailDomains,
   contactSteps,
   contactoImages,
   faqItems,
   formCopy,
-  industryOptions,
   operationContextItems,
-  volumeOptions,
 } from "@/data/contacto";
+import {
+  industryOptions,
+  leadMaxLength,
+  validateLead,
+  volumeOptions,
+  type LeadError,
+  type LeadInput,
+} from "@/lib/contactLead";
 import { seoConfig } from "@/data/seo";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { FaqSection } from "@/components/FaqSection";
 import { ImageWithFallback } from "@/components/ImageWithFallback";
+import { Turnstile } from "@/components/Turnstile";
 
-interface ContactFormData {
-  firstName: string;
-  lastName: string;
-  company: string;
-  role: string;
-  email: string;
-  phone: string;
-  industry: string;
-  volume: string;
-  message: string;
-  privacyAccepted: boolean;
-}
+type ContactFormData = LeadInput;
 
 const emptyForm: ContactFormData = {
   firstName: "",
@@ -58,42 +53,49 @@ const emptyForm: ContactFormData = {
   privacyAccepted: false,
 };
 
+const turnstileSiteKey: string =
+  import.meta.env.VITE_TURNSTILE_SITE_KEY?.trim() || "";
+
 type FormErrors = Partial<Record<keyof ContactFormData, string>>;
 
-function isCorporateEmail(email: string) {
-  const domain = email.split("@")[1]?.toLowerCase().trim();
-  if (!domain) return false;
-  return !blockedEmailDomains.includes(domain);
-}
-
-function isValidPhone(phone: string) {
-  const digits = phone.replace(/\D/g, "").length;
-  return /^\+?[\d\s().-]+$/.test(phone) && digits >= 7 && digits <= 15;
-}
+const errorMessages: Partial<
+  Record<keyof ContactFormData, Partial<Record<LeadError, string>>>
+> = {
+  firstName: { required: formCopy.errorFirstName },
+  lastName: { required: formCopy.errorLastName },
+  company: { required: formCopy.errorCompany },
+  email: {
+    required: formCopy.errorEmailRequired,
+    format: formCopy.errorEmailFormat,
+    personal: formCopy.errorEmail,
+  },
+  phone: { format: formCopy.errorPhone },
+  privacyAccepted: { required: formCopy.errorPrivacy },
+};
 
 function validate(data: ContactFormData): FormErrors {
   const errors: FormErrors = {};
-  const email = data.email.trim();
-  const phone = data.phone.trim();
-  if (!data.firstName.trim()) errors.firstName = formCopy.errorFirstName;
-  if (!data.lastName.trim()) errors.lastName = formCopy.errorLastName;
-  if (!data.company.trim()) errors.company = formCopy.errorCompany;
-  if (!email) {
-    errors.email = formCopy.errorEmailRequired;
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    errors.email = formCopy.errorEmailFormat;
-  } else if (!isCorporateEmail(email)) {
-    errors.email = formCopy.errorEmail;
+  const entries = Object.entries(validateLead(data)) as [
+    keyof ContactFormData,
+    LeadError,
+  ][];
+  for (const [field, code] of entries) {
+    errors[field] = errorMessages[field]?.[code] ?? formCopy.errorSystem;
   }
-  if (phone && !isValidPhone(phone)) errors.phone = formCopy.errorPhone;
-  if (!data.privacyAccepted) errors.privacyAccepted = formCopy.errorPrivacy;
   return errors;
 }
 
-// API integration will be added later.
-async function submitContactRequest(data: ContactFormData): Promise<void> {
-  void data;
-  return Promise.resolve();
+async function submitContactRequest(
+  data: ContactFormData,
+  turnstileToken: string,
+  submissionId: string,
+): Promise<void> {
+  const response = await fetch("/api/leads", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ...data, turnstileToken, submissionId }),
+  });
+  if (!response.ok) throw new Error(`Lead request failed: ${response.status}`);
 }
 
 // The control is rendered before its <label> so CSS sibling selectors can float
@@ -156,10 +158,18 @@ export function Contacto() {
   const [status, setStatus] = useState<
     "idle" | "submitting" | "success" | "error"
   >("idle");
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [turnstileKey, setTurnstileKey] = useState(0);
 
   const formRef = useRef<HTMLFormElement>(null);
   const successTitleRef = useRef<HTMLHeadingElement>(null);
   const focusFirstError = useRef(false);
+  // State updates land after the event, so a second click in the same frame
+  // would still see "idle"; the ref blocks it synchronously.
+  const submittingRef = useRef(false);
+  // One ID per submission: retries of the same data reuse it so the server can
+  // recognise them; editing the form starts a new submission.
+  const submissionIdRef = useRef("");
 
   const fieldId = (name: keyof ContactFormData) => `${formBaseId}-${name}`;
   const describedBy = (name: keyof ContactFormData, hasHint?: boolean) =>
@@ -191,6 +201,7 @@ export function Contacto() {
   ) {
     setFormData((prev) => ({ ...prev, [name]: value }));
     setErrors((prev) => ({ ...prev, [name]: undefined }));
+    submissionIdRef.current = "";
   }
 
   function handleTextChange(name: keyof ContactFormData) {
@@ -203,7 +214,7 @@ export function Contacto() {
 
   async function handleSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (status === "submitting") return;
+    if (submittingRef.current) return;
     // Honeypot filled: fake success so the bot gets no signal to adapt.
     if (new FormData(e.currentTarget).get("website")) {
       setStatus("success");
@@ -216,12 +227,28 @@ export function Contacto() {
       return;
     }
 
+    if (!turnstileToken) {
+      setStatus("error");
+      return;
+    }
+
+    submittingRef.current = true;
+    submissionIdRef.current ||= crypto.randomUUID();
     setStatus("submitting");
     try {
-      await submitContactRequest(formData);
+      await submitContactRequest(
+        formData,
+        turnstileToken,
+        submissionIdRef.current,
+      );
       setStatus("success");
     } catch {
       setStatus("error");
+      // The server already spent this token; remount the widget for a new one.
+      setTurnstileToken("");
+      setTurnstileKey((key) => key + 1);
+    } finally {
+      submittingRef.current = false;
     }
   }
 
@@ -393,6 +420,7 @@ export function Contacto() {
                     <input
                       id={fieldId("firstName")}
                       name="firstName"
+                      maxLength={leadMaxLength.firstName}
                       type="text"
                       autoComplete="given-name"
                       required
@@ -413,6 +441,7 @@ export function Contacto() {
                     <input
                       id={fieldId("lastName")}
                       name="lastName"
+                      maxLength={leadMaxLength.lastName}
                       type="text"
                       autoComplete="family-name"
                       required
@@ -433,6 +462,7 @@ export function Contacto() {
                     <input
                       id={fieldId("company")}
                       name="company"
+                      maxLength={leadMaxLength.company}
                       type="text"
                       autoComplete="organization"
                       required
@@ -452,6 +482,7 @@ export function Contacto() {
                     <input
                       id={fieldId("role")}
                       name="role"
+                      maxLength={leadMaxLength.role}
                       type="text"
                       autoComplete="organization-title"
                       value={formData.role}
@@ -472,6 +503,7 @@ export function Contacto() {
                     <input
                       id={fieldId("email")}
                       name="email"
+                      maxLength={leadMaxLength.email}
                       type="email"
                       autoComplete="email"
                       required
@@ -492,6 +524,7 @@ export function Contacto() {
                     <input
                       id={fieldId("phone")}
                       name="phone"
+                      maxLength={leadMaxLength.phone}
                       type="tel"
                       autoComplete="tel"
                       value={formData.phone}
@@ -557,6 +590,7 @@ export function Contacto() {
                     <textarea
                       id={fieldId("message")}
                       name="message"
+                      maxLength={leadMaxLength.message}
                       rows={4}
                       value={formData.message}
                       onChange={handleTextChange("message")}
@@ -613,6 +647,17 @@ export function Contacto() {
                     {errors.privacyAccepted}
                   </FieldError>
                 )}
+
+                <Turnstile
+                  key={turnstileKey}
+                  siteKey={turnstileSiteKey}
+                  action="contact"
+                  onToken={setTurnstileToken}
+                />
+
+                <p className="sr-only" role="status">
+                  {status === "submitting" ? formCopy.submitLoadingLabel : ""}
+                </p>
 
                 {status === "error" && (
                   <p className="form-system-error" role="alert">
