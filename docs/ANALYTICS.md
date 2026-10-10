@@ -9,6 +9,7 @@ Toda la integración vive en `src/analytics/`. Ninguna página ni componente imp
 | `linkedin.ts`, `gtm.ts`, `ga4.ts` | Un proveedor por servicio |
 | `loadScript.ts` | Inserta cada script externo una sola vez, con `async` |
 | `usePageViews.ts` | Hook usado en `MainLayout`: un page view por cambio de ruta |
+| `VercelAnalytics.tsx` | Vercel Web Analytics (`@vercel/analytics/react`), montado una vez en `src/main.tsx` |
 
 `initAnalytics()` se llama una vez en `src/main.tsx`, fuera de React (StrictMode no lo duplica). Los page views se filtran por ruta, así que re-renders o el doble montaje de StrictMode no los repiten.
 
@@ -35,6 +36,14 @@ El Insight Tag solo registra la primera carga. Para la SPA se activa `window._wa
 - **GTM:** al definir `VITE_GTM_ID` se carga el contenedor y cada ruta se envía al `dataLayer` como `{ event: "page_view", page_path }`. En GTM, usar un trigger *Custom Event* `page_view`.
 - **GA4:** al definir `VITE_GA4_MEASUREMENT_ID` se carga `gtag.js` con `send_page_view: false` y la SPA envía `page_view` en cada ruta.
 - Si GA4 se configura **dentro** de GTM, no definas también `VITE_GA4_MEASUREMENT_ID`: se contaría doble.
+
+## Vercel Web Analytics
+
+- `<VercelAnalytics />` se monta una sola vez en `src/main.tsx`, junto a `<App />`. No usa variable de entorno: se activa desde el dashboard de Vercel.
+- Su script sigue las navegaciones de React Router mediante la History API y registra cada ruta, incluida la 404. Por eso **no** se conecta a `usePageViews`: se contaría doble.
+- Solo registra la URL de cada página. No se envían eventos personalizados ni datos del formulario.
+- En `npm run dev` carga el script de depuración de Vercel, que escribe `[Vercel Web Analytics] [view] …` en la consola y no envía datos. En producción carga `/_vercel/insights/script.js`.
+- **Activar:** Vercel → proyecto → Analytics → Enable y después redesplegar. Si se despliega antes de activarlo, `script.js` responde 404 hasta el siguiente deploy.
 
 ## Agregar otro servicio (Meta Pixel, TikTok…)
 
