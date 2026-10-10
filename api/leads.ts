@@ -257,13 +257,24 @@ async function sendNotification(
         .map((address) => address.toLowerCase()),
     ),
   ];
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${env.RESEND_API_KEY}`,
+    "Content-Type": "application/json",
+    "Idempotency-Key": `lead-notification/${submissionId}`,
+  };
+  // fetch rejects header values with characters above U+00FF using an opaque
+  // "ByteString" error. Name the header and position instead, never the value.
+  for (const [name, value] of Object.entries(headers)) {
+    const index = value.search(/[\u0100-\uffff]/);
+    if (index >= 0) {
+      const code = value.charCodeAt(index).toString(16).toUpperCase().padStart(4, "0");
+      const source = name === "Authorization" ? ` (RESEND_API_KEY position ${index - 7})` : "";
+      throw new Error(`Resend header ${name} has U+${code} at index ${index}${source}`);
+    }
+  }
   const response = await fetch("https://api.resend.com/emails", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-      "Idempotency-Key": `lead-notification/${submissionId}`,
-    },
+    headers,
     body: JSON.stringify({
       from: env.RESEND_FROM,
       to,

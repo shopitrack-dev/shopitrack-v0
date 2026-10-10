@@ -109,6 +109,8 @@ El aviso llega a `CONTACT_EMAIL` y, si está configurado, a `CONTACT_EMAIL_BACKU
 
 Los mensajes al usuario son los textos genéricos de `formCopy`; los logs no incluyen datos personales.
 
+**`Resend header Authorization has U+XXXX at index N (RESEND_API_KEY position P)`:** el valor de `RESEND_API_KEY` en Vercel contiene un carácter que no puede ir en un encabezado HTTP (por ejemplo, una raya `—` que un editor puso en lugar de un guion, o una nota pegada junto a la clave). Las claves de Resend solo tienen letras, números y `_`. Hay que volver a pegar la clave como texto plano y redesplegar. Sin esta validación, el error aparecía como `Cannot convert argument to a ByteString…` y la solicitud nunca llegaba a Resend.
+
 **Reenviar un aviso fallido:** filtrar en Airtable `Estado de notificación` = `Error`, o `Pendiente` con más de unos minutos de antigüedad, y reenviar el aviso manualmente. No hace falta volver a crear el lead. Al terminar, cambiar el estado a `Enviada`.
 
 **Abuso:** la protección es Turnstile. Para limitar la frecuencia de solicitudes, agregar una regla de rate limiting en Vercel → Firewall para `/api/leads`. Un contador en memoria no sirve en funciones serverless.

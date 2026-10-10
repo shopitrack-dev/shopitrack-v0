@@ -326,6 +326,25 @@ test("9. two simultaneous requests with the same UUID: one email, but Airtable c
   assert.ok(logs.some((line) => line.includes(`2 records share submission ${submissionId}`)));
 });
 
+test("Unicode content is sent; a non-Latin-1 RESEND_API_KEY is reported without leaking it", async () => {
+  let fake = fakeServices();
+  assert.equal((await post({ ...lead, company: "Ñandú — Logística" })).status, 200);
+  assert.equal(fake.emailsSent.length, 1);
+  assert.ok(String(fake.emailsSent[0].body.text).includes("Empresa: Ñandú — Logística"));
+
+  // Same failure as production: an em dash (U+2014) at position 9 of the key.
+  process.env.RESEND_API_KEY = "re_abcdef\u2014hidden-part";
+  fake = fakeServices();
+  const response = await post(lead);
+  assert.equal(response.status, 200);
+  assert.ok(!fake.calls.includes("resend"));
+  assert.equal(fake.records[0].fields["Estado de notificación"], "Error");
+  assert.ok(logs.some((line) =>
+    line.includes("Resend header Authorization has U+2014 at index 16 (RESEND_API_KEY position 9)"),
+  ));
+  assert.ok(!logs.some((line) => line.includes("hidden-part") || line.includes("re_abcdef")));
+});
+
 test("Airtable failure returns 502 and sends no email", async () => {
   const fake = fakeServices({ airtableDown: true });
   const response = await post(lead);
