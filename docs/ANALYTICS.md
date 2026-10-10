@@ -10,6 +10,7 @@ Toda la integración vive en `src/analytics/`. Ninguna página ni componente imp
 | `loadScript.ts` | Inserta cada script externo una sola vez, con `async` |
 | `usePageViews.ts` | Hook usado en `MainLayout`: un page view por cambio de ruta |
 | `VercelAnalytics.tsx` | Vercel Web Analytics (`@vercel/analytics/react`), montado una vez en `src/main.tsx` |
+| `VercelSpeedInsights.tsx` | Vercel Speed Insights (`@vercel/speed-insights/react`), montado una vez en `src/main.tsx`; solo en builds de producción |
 
 `initAnalytics()` se llama una vez en `src/main.tsx`, fuera de React (StrictMode no lo duplica). Los page views se filtran por ruta, así que re-renders o el doble montaje de StrictMode no los repiten.
 
@@ -44,6 +45,12 @@ El Insight Tag solo registra la primera carga. Para la SPA se activa `window._wa
 - Solo registra la URL de cada página. No se envían eventos personalizados ni datos del formulario.
 - En `npm run dev` carga el script de depuración de Vercel, que escribe `[Vercel Web Analytics] [view] …` en la consola y no envía datos. En producción carga `/_vercel/insights/script.js`.
 - **Activar:** Vercel → proyecto → Analytics → Enable y después redesplegar. Si se despliega antes de activarlo, `script.js` responde 404 hasta el siguiente deploy.
+
+## Vercel Speed Insights
+
+- `<VercelSpeedInsights />` se monta una sola vez en `src/main.tsx`, junto a Web Analytics e independiente de él. Mide Core Web Vitals de visitas reales (LCP, CLS, INP, FCP, TTFB) y no envía datos del formulario.
+- A diferencia de Analytics, el componente no acepta `mode` y detecta el entorno con `process.env`, que Vite no define en el navegador. Por eso solo se renderiza en builds de producción (`import.meta.env.PROD`): en `npm run dev` no carga nada. En producción carga `/_vercel/speed-insights/script.js`.
+- **Activar:** Vercel → proyecto → Speed Insights → Enable y después redesplegar. Los datos aparecen a medida que llegan visitas reales.
 
 ## Agregar otro servicio (Meta Pixel, TikTok…)
 
