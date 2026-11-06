@@ -23,19 +23,20 @@ import { ImageWithFallback } from "@/components/ImageWithFallback";
 import { ImageSlider } from "@/components/ImageSlider";
 
 function StoreLinks({ links }: { links: typeof appStoreLinks }) {
-  return links.map(({ text, icon: StoreIcon, href }) => (
-    <a
-      key={text}
-      className="btn btn-outline"
-      href={href || undefined}
-      aria-disabled={!href}
-      target="_blank"
-      rel="noopener noreferrer"
-    >
-      <StoreIcon />
-      {text}
-    </a>
-  ));
+  return links
+    .filter(({ href }) => href.trim().length > 0)
+    .map(({ text, icon: StoreIcon, href }) => (
+      <a
+        key={text}
+        className="btn btn-outline"
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+      >
+        <StoreIcon />
+        {text}
+      </a>
+    ));
 }
 
 export function Clientes() {
