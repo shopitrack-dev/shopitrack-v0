@@ -18,9 +18,13 @@ El proyecto está preparado para SEO con:
 
 ## SEO por página
 
-Como es una SPA sin SSR, `index.html` solo define los meta tags para el primer render (Home) y para crawlers sin JS. Cada página actualiza esos mismos tags al montar mediante el componente `<Seo />` (`src/components/Seo.tsx`), que sobrescribe `title`, `meta[description]`, `meta[robots]`, `link[canonical]`, `og:*` y `twitter:*` usando `document.head.querySelector`.
+La aplicación es una SPA con prerenderizado estático durante `npm run build`. `scripts/prerender.mjs` renderiza las rutas de `seoConfig` con React y genera HTML con sus encabezados y metadatos reales, accesibles también sin JavaScript. Vercel entrega esos archivos mediante los rewrites de `vercel.json`; las rutas desconocidas usan `spa.html`, un fallback `noindex` que permite que React muestre la página 404.
 
-El contenido de cada página (title/description) vive centralizado en `src/data/seo.ts` (`seoConfig`). Antes de crear una página nueva, agrega su entrada ahí y renderiza `<Seo {...seoConfig.miPagina} />` como primer elemento de la página.
+Al navegar dentro de la SPA, cada página actualiza los metadatos mediante `<Seo />` (`src/components/Seo.tsx`), que sobrescribe `title`, `meta[description]`, `meta[robots]`, `link[canonical]`, `og:*` y `twitter:*`. El HTML prerenderizado se sustituye por el render del cliente al iniciar React.
+
+El contenido de cada página (title/description) vive centralizado en `src/data/seo.ts` (`seoConfig`). Antes de crear una página nueva, agrega su entrada ahí, renderiza `<Seo {...seoConfig.miPagina} />`, incluye la ruta en el rewrite de `vercel.json`, en `public/sitemap.xml` y en `tests/seo.test.mjs`. Cada página debe tener un H1 y encabezados H2 relevantes. Los títulos deben tener entre 30 y 60 caracteres y las descripciones como máximo 160; el build valida estos límites.
+
+Ejecuta `npm run build && npm run test:seo` para comprobar los metadatos, la jerarquía de encabezados, el sitemap y las rutas configuradas para Vercel.
 
 La página `NotFound` pasa `noIndex` para que el catch-all (`path="*"`) no se indexe.
 
@@ -35,7 +39,7 @@ Al construir el contenido definitivo de las páginas pendientes (una vez lleguen
 
 ## Rutas indexadas
 
-Todas las rutas de `src/App.tsx` deben reflejarse en `public/sitemap.xml`: `/`, `/empresas`, `/clientes`, `/industrias`, `/contacto`.
+Las rutas indexables de `src/App.tsx` deben reflejarse en `public/sitemap.xml`: `/`, `/empresas`, `/clientes`, `/sectores`, `/contacto`, `/aviso-de-privacidad`, `/cookies` y `/terminos-y-condiciones`. La 404 no se incluye.
 
 ## Qué no modificar sin justificación
 

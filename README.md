@@ -2,7 +2,7 @@
 
 Shopitrack es una plataforma que coordina a empresas de entrega y a sus clientes para que cada entrega a domicilio se realice en el momento acordado, reduciendo entregas fallidas, reprogramaciones y costos operativos en la última milla.
 
-Este repositorio contiene el sitio web corporativo de Shopitrack: una SPA (Single Page Application) desarrollada específicamente para el proyecto.
+Este repositorio contiene el sitio web corporativo de Shopitrack: una SPA (Single Page Application) con HTML prerenderizado por ruta, desarrollada específicamente para el proyecto.
 
 ## Funcionalidades principales
 
@@ -99,6 +99,7 @@ npm run preview     # preview del build
 npm run typecheck   # verificación de tipos
 npm run lint        # eslint
 npm test            # pruebas del formulario de contacto (validación y endpoint simulado; Node >= 22.15)
+npm run test:seo    # verifica el HTML generado; ejecutar npm run build primero
 ```
 
 ## Variables de entorno
@@ -117,10 +118,10 @@ El formulario de contacto usa además variables de Turnstile, Airtable y Resend 
 
 ## Build y despliegue
 
-El proyecto está preparado para Vercel (SPA con React Router + fallback a `index.html`). Configuración en `vercel.json`:
+El proyecto está preparado para Vercel (SPA con React Router y prerenderizado estático). Configuración en `vercel.json`:
 
 - `framework: vite`, `buildCommand: npm run build`, `outputDirectory: dist`
-- `rewrites` de rutas sin extensión a `index.html` (soporte para `/empresas`, `/clientes`, etc.)
+- `rewrites` de rutas conocidas a sus archivos HTML prerenderizados y de rutas desconocidas a `spa.html` (fallback `noindex`)
 - Cache inmutable de un año para `/assets/*`
 
 ### Opción 1: Conectar repositorio (recomendada)

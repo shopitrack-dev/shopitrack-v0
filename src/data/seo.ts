@@ -4,8 +4,6 @@ export interface SeoEntry {
   description: string;
 }
 
-//Ajustes de titulos en pestañas
-
 export const seoConfig: Record<
   | "home"
   | "empresas"
@@ -20,32 +18,31 @@ export const seoConfig: Record<
 > = {
   home: {
     path: "/",
-    title: "Shopitrack",
+    title: "Shopitrack | Reduce las entregas fallidas",
     description:
-      "Shopitrack coordina empresas y clientes con ventanas de entrega, ETA y seguimiento en tiempo real para evitar al cliente ausente y reducir las entregas fallidas.",
+      "Shopitrack coordina empresas y clientes con ventanas de entrega, ETA y seguimiento en tiempo real para reducir las entregas fallidas.",
   },
   empresas: {
     path: "/empresas",
-    title: "Shopitrack para empresas | Software de seguimiento de entregas",
+    title: "Empresas | Seguimiento de entregas | Shopitrack",
     description:
       "El software de Shopitrack ayuda a las empresas a reducir entregas fallidas, mejorar la comunicación durante la entrega y dar seguimiento en tiempo real.",
   },
   clientes: {
     path: "/clientes",
-    title:
-      "Shopitrack para clientes | Ventanas de entrega y ETA en tiempo real",
+    title: "Clientes | Seguimiento de entregas | Shopitrack",
     description:
-      "Confirma tu ventana de entrega, conoce tu ETA y mantente en contacto durante la entrega con Shopitrack para dejar de ser el cliente ausente en tus pedidos de última milla.",
+      "Confirma tu ventana de entrega, conoce tu ETA y mantente en contacto con Shopitrack para recibir tus pedidos de última milla.",
   },
   sectores: {
     path: "/sectores",
-    title: "Sectores que confían en Shopitrack | Entregas de última milla",
+    title: "Sectores | Entregas de última milla | Shopitrack",
     description:
-      "Retail, electrodomésticos, muebles, farmacias, tecnología y más: descubre cómo Shopitrack mejora la experiencia de entrega en la última milla para cada sector de e-commerce.",
+      "Descubre cómo Shopitrack mejora la experiencia de entrega en la última milla para retail, muebles, farmacias, tecnología y otros sectores.",
   },
   contacto: {
     path: "/contacto",
-    title: "Contacto | Shopitrack",
+    title: "Contacto | Habla con Shopitrack",
     description:
       "Habla con el equipo de Shopitrack y descubre cómo nuestro software para entregas reduce las entregas fallidas y mejora el seguimiento de entregas de tu empresa.",
   },

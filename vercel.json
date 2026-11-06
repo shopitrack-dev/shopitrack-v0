@@ -10,14 +10,18 @@
       "headers": [{ "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }]
     },
     {
-      "source": "/((?!api/)(?!.*\\.).*)",
+      "source": "/((?!api/)(?!.*\\.).+)",
       "headers": [{ "key": "Content-Type", "value": "text/html; charset=utf-8" }]
     }
   ],
   "rewrites": [
     {
+      "source": "/:page(empresas|clientes|sectores|contacto|aviso-de-privacidad|cookies|terminos-y-condiciones)",
+      "destination": "/:page.html"
+    },
+    {
       "source": "/((?!api/)(?!.*\\.).*)",
-      "destination": "/index.html"
+      "destination": "/spa.html"
     }
   ]
 }
