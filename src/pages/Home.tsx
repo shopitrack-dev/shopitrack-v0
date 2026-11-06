@@ -323,7 +323,7 @@ export function Home() {
                   src={images.trust1}
                   width={1024}
                   height={559}
-                  alt=""
+                  alt="Representante de una empresa y repartidor estrechando la mano en un almacén"
                   loading="lazy"
                   className="photo-frame-img"
                 />
@@ -344,7 +344,7 @@ export function Home() {
                   src={images.trust2}
                   width={1024}
                   height={559}
-                  alt=""
+                  alt="Repartidor entregando un paquete a un cliente en su domicilio"
                   loading="lazy"
                   className="photo-frame-img"
                 />

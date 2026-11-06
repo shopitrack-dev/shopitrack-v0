@@ -56,6 +56,22 @@ test('el sitemap y los rewrites cubren las rutas prerenderizadas', async () => {
   assert.equal(rewrites.at(-1).destination, '/spa.html');
 });
 
+test('las imágenes de Home incluyen texto alternativo y las imágenes de confianza son descriptivas', async () => {
+  const html = await readFile('dist/index.html', 'utf8');
+  const images = [...html.matchAll(/<img\b[^>]*>/gi)].map((match) => match[0]);
+  assert.ok(images.length > 0, 'No se encontraron imágenes en Home');
+
+  for (const image of images) {
+    assert.match(image, /(?:^|\s)alt="[^"]*"/, `Imagen sin atributo alt: ${image}`);
+  }
+
+  for (const src of ['/images/confianza1.webp', '/images/confianza2.webp']) {
+    const image = images.find((element) => element.includes(`src="${src}"`));
+    assert.ok(image, `No se encontró la imagen ${src}`);
+    assert.match(image, /(?:^|\s)alt="[^"]*\S[^"]*"/, `Falta texto alternativo descriptivo para ${src}`);
+  }
+});
+
 test('el fallback de rutas desconocidas no se presenta como Home indexable', async () => {
   const html = await readFile('dist/spa.html', 'utf8');
   assert.match(html, /<meta name="robots" content="noindex, follow" \/>/);
