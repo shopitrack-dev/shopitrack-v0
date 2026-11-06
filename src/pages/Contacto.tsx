@@ -17,6 +17,7 @@ import {
 import { InfoCard } from "@/components/InfoCard";
 import { SectionHeading } from "@/components/SectionHeading";
 import { Seo } from "@/components/Seo";
+import { trackEvent } from "@/analytics";
 import {
   contactSteps,
   contactoImages,
@@ -241,6 +242,7 @@ export function Contacto() {
         turnstileToken,
         submissionIdRef.current,
       );
+      trackEvent("form_submit", { form: "contact" });
       setStatus("success");
     } catch {
       setStatus("error");
@@ -301,7 +303,11 @@ export function Contacto() {
                   Cada empresa enfrenta desafíos distintos. Por eso preferimos
                   comprender primero tu operación antes de hablar de soluciones.
                 </p>
-                <a className="btn btn-primary" href="#formulario-contacto">
+                <a
+                  className="btn btn-primary"
+                  href="#formulario-contacto"
+                  onClick={() => trackEvent("cta_click", { cta_name: "contact_form_hero" })}
+                >
                   Agenda una conversación con nuestro equipo{" "}
                   <ArrowRight size={16} />
                 </a>
@@ -726,12 +732,17 @@ export function Contacto() {
                 en que tus clientes viven la última etapa de una compra.
               </p>
               <div className="contact-actions">
-                <a className="btn btn-coral" href="#formulario-contacto">
+                <a
+                  className="btn btn-coral"
+                  href="#formulario-contacto"
+                  onClick={() => trackEvent("cta_click", { cta_name: "contact_form_final" })}
+                >
                   Agenda una demostración personalizada <ArrowRight size={15} />
                 </a>
                 <a
                   className="hidden btn btn-outline"
                   href="#formulario-contacto"
+                  onClick={() => trackEvent("cta_click", { cta_name: "contact_specialist" })}
                 >
                   Habla con un especialista
                 </a>
