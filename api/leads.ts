@@ -226,6 +226,7 @@ function templateVariables(record: AirtableRecord) {
       EMAIL_CLIENTE: cell(record, "Email") || "No proporcionado",
       EMPRESA: cell(record, "Empresa") || "No proporcionado",
       INDUSTRIA: cell(record, "Industria") || "No proporcionada",
+      VOLUMEN_MENSUAL: cell(record, "Volumen mensual") || "No proporcionado",
       MENSAJE: cell(record, "Mensaje") || "Sin mensaje",
       TELEFONO: cell(record, "Teléfono") || "No proporcionado",
     },

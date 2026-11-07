@@ -9,6 +9,16 @@ interface FakeRecord {
   fields: Record<string, unknown>;
 }
 
+interface ResendPayload {
+  from: string;
+  to: string[];
+  reply_to?: string;
+  template: {
+    id: string;
+    variables: Record<string, string>;
+  };
+}
+
 interface FakeOptions {
   turnstileOk: boolean;
   airtableDown: boolean;
@@ -56,7 +66,7 @@ function fakeServices(overrides: Partial<FakeOptions> = {}) {
   const createdFields: Record<string, unknown>[] = [];
   const resendRequests: {
     key: string;
-    body: Record<string, any>;
+    body: ResendPayload;
   }[] = [];
   const emailsSent: typeof resendRequests = [];
   const resendKeys = new Map<string, { payload: string; done: boolean }>();
@@ -124,7 +134,7 @@ function fakeServices(overrides: Partial<FakeOptions> = {}) {
     const key = new Headers(init.headers).get("Idempotency-Key") ?? "";
     const payload = String(init.body);
     const kind = key.startsWith("lead-client/") ? "client" : "internal";
-    resendRequests.push({ key, body });
+    resendRequests.push({ key, body: body as ResendPayload });
 
     const known = resendKeys.get(key);
     if (known && !known.done) {
@@ -277,6 +287,7 @@ test("1. creates one lead and sends both published templates", async () => {
     EMAIL_CLIENTE: lead.email,
     EMPRESA: lead.company,
     INDUSTRIA: "e-Commerce",
+    VOLUMEN_MENSUAL: "No proporcionado",
     MENSAJE: lead.message,
     TELEFONO: lead.phone,
   });
